@@ -1,8 +1,7 @@
 [project]
-name = "motrix-lab"
+name = "motrixarena-vbot-rl"
 version = "0.1.0"
-description = "A general-purpose machine learning architecture designed for robot training"
-authors = [{ name = "Motphys", email = "developers@motphys.com" }]
+description = "PPO-based VBot quadruped navigation project for MotrixArena Competition S1"
 requires-python = "==3.10.*"
 
 [project.optional-dependencies]
