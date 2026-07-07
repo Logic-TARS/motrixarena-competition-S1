@@ -1,12 +1,24 @@
-# 🏆 谋先飞机器人比赛（VBot Competition）项目展示
+# 🏆 MotrixArena S1 四足机器人强化学习比赛项目
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![RL](https://img.shields.io/badge/RL-SKRL-FF6F00)
 ![Simulation](https://img.shields.io/badge/Simulation-MotrixSim-2E8B57)
 ![Backend](https://img.shields.io/badge/Backend-JAX%20%7C%20PyTorch-FF6F00)
 
-> 本仓库用于展示我在 **谋先飞机器人比赛（VBot Competition）** 中的强化学习算法与工程实践成果。  
-> 项目基于 **MotrixSim** 仿真平台与 **SKRL** 训练框架，聚焦四足机器人导航任务。
+> 本仓库用于展示我在 **MotrixArena S1 / VBot Competition** 中的强化学习算法与工程实践成果。  
+> 项目基于 **MotrixSim** 仿真平台与 **SKRL** 训练框架，聚焦四足机器人 VBot 在复杂赛道中的导航、避障与分段迁移训练。
+
+---
+
+## ✅ 项目亮点 / 可验证结果
+
+- **比赛结果**：MotrixArena S1 / VBot Competition **三等奖**，排名 **8 / 30**。
+- **完整训练链路**：完成从环境注册、奖励设计、PPO 训练、checkpoint 保存到策略回放的完整流程。
+- **分段课程学习**：将完整赛道拆分为 `section001`、`section011`、`section012`、`section013`、`full` 等环境，支持分段训练与策略迁移。
+- **高并行强化学习训练**：默认支持 `2048` 个并行环境，基于 PPO 进行端到端策略训练。
+- **双后端支持**：支持 **JAX** 与 **PyTorch** 两种训练后端，可通过 `--train-backend` 切换。
+- **可复现实验入口**：提供 `scripts/train.py`、`scripts/play.py`、`scripts/view.py`，用于训练、推理和可视化验证。
+- **已保存策略模型**：训练完成的策略 checkpoint 位于 `checkpoints/` 目录，可用于直接回放或继续课程学习。
 
 ---
 
@@ -72,8 +84,8 @@
 ### 1) 克隆仓库
 
 ```bash
-git clone https://github.com/Logic-TARS/vbot-competition.git
-cd vbot-competition
+git clone https://github.com/Logic-TARS/motrixarena-competition-S1.git
+cd motrixarena-competition-S1
 git lfs pull
 ```
 
@@ -159,10 +171,11 @@ uv run scripts/play.py --env vbot_navigation_section001 --policy checkpoints/bes
 
 ## 📝 亮点说明
 
-- **奖励函数塑形**：稠密奖励引导 + 阶段性任务奖励（checkpoint 检查点奖励、终点庆祝奖励），加速收敛
-- **多阶段课程学习**：支持分段训练 → 合并训练 → 完整赛道的递进式课程学习（通过 `--policy` 加载预训练策略）
-- **双后端支持**：JAX 和 PyTorch 两种训练后端可自由切换
-- **PPO 算法优化**：针对导航任务调整 PPO 超参数，优化策略稳定性与收敛效率
+- **奖励函数塑形**：稠密奖励引导 + 阶段性任务奖励（checkpoint 检查点奖励、终点庆祝奖励），加速收敛。
+- **多阶段课程学习**：支持分段训练 → 合并训练 → 完整赛道的递进式训练流程，并可通过 `--policy` 加载预训练策略继续训练。
+- **双后端支持**：JAX 和 PyTorch 两种训练后端可自由切换。
+- **PPO 算法优化**：针对导航任务调整 PPO 超参数，优化策略稳定性与收敛效率。
+- **工程化封装**：通过 `uv workspace` 管理 `motrix_envs` 与 `motrix_rl`，训练、回放、可视化入口统一。
 
 ---
 
