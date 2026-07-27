@@ -1,124 +1,66 @@
-# 🏆 MotrixArena S1 四足机器人强化学习比赛项目
+# MotrixArena S1 VBot Reinforcement Learning
+
+[中文](README.zh-CN.md)
+
+VBot quadruped navigation project for MotrixArena S1, built with MotrixSim and SKRL PPO. The project focuses on long-course navigation, obstacle handling, segmented curriculum training, checkpoint transfer, and policy replay.
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![RL](https://img.shields.io/badge/RL-SKRL-FF6F00)
 ![Simulation](https://img.shields.io/badge/Simulation-MotrixSim-2E8B57)
 ![Backend](https://img.shields.io/badge/Backend-JAX%20%7C%20PyTorch-FF6F00)
 
-> 本仓库用于展示我在 **MotrixArena S1 / VBot Competition** 中的强化学习算法与工程实践成果。  
-> 项目基于 **MotrixSim** 仿真平台与 **SKRL** 训练框架，聚焦四足机器人 VBot 在复杂赛道中的导航、避障与分段迁移训练。
+## Demo / Replay
 
----
+This repository includes trained policy checkpoints and replay scripts. After installing dependencies and pulling Git LFS assets, replay a saved policy with:
 
-## ✅ 项目亮点 / 可验证结果
+```bash
+uv run scripts/play.py --env vbot_navigation_section001 --policy checkpoints/best_agent001.pickle
+uv run scripts/play.py --env vbot_navigation_full --policy checkpoints/best_agent.pickle
+```
 
-- **比赛结果**：MotrixArena S1 / VBot Competition **三等奖**，排名 **8 / 30**。
-- **完整训练链路**：完成从环境注册、奖励设计、PPO 训练、checkpoint 保存到策略回放的完整流程。
-- **分段课程学习**：将完整赛道拆分为 `section001`、`section011`、`section012`、`section013`、`full` 等环境，支持分段训练与策略迁移。
-- **高并行强化学习训练**：默认支持 `2048` 个并行环境，基于 PPO 进行端到端策略训练。
-- **双后端支持**：支持 **JAX** 与 **PyTorch** 两种训练后端，可通过 `--train-backend` 切换。
-- **可复现实验入口**：提供 `scripts/train.py`、`scripts/play.py`、`scripts/view.py`，用于训练、推理和可视化验证。
-- **已保存策略模型**：训练完成的策略 checkpoint 位于 `checkpoints/` 目录，可用于直接回放或继续课程学习。
+For visual inspection without loading a trained policy:
 
----
+```bash
+uv run scripts/view.py --env vbot_navigation_section001 --num-envs 1
+```
 
-## 🧩 问题—方法—效果
+## Highlights
 
-| 问题 | 解决方法 | 产生效果 |
-|---|---|---|
-| 完整赛道较长，直接端到端训练收敛慢，策略难以一次性覆盖全部阶段 | 将任务拆分为 `section001`、`section011`、`section012`、`section013`、`full` 等分段环境，采用分段训练与 checkpoint 迁移 | 降低长任务训练难度，形成从局部导航到完整赛道的递进式训练流程 |
-| 复杂地形、滚动球和终点动作导致策略容易摔倒、偏航或无法稳定到达终点 | 设计前进奖励、到达奖励、终点奖励、摔倒惩罚和阶段性任务奖励，引导机器人保持稳定前进 | 提升策略在复杂赛道中的稳定性，并支撑完整比赛任务提交 |
-| 奖励具有阶段性和稀疏性，机器人容易只学习局部行为，难以完成完整路线 | 结合稠密导航奖励与 checkpoint 奖励，先训练基础导航能力，再迁移到复杂赛段 | 提高策略学习效率，减少从零训练完整赛道的难度 |
-| 强化学习采样需求大，单环境训练迭代效率低 | 使用 PPO + SKRL 训练框架，默认配置 `2048` 个并行环境，并支持 JAX / PyTorch 后端 | 提升采样效率，支持多赛段策略快速迭代 |
-| 训练结果需要可复现和可回放，不能只停留在代码实现 | 封装 `train.py`、`play.py`、`view.py` 三类入口，并保存最优 checkpoint | 支持训练复现、策略回放和可视化验证，便于简历和面试展示 |
+- Competition result: MotrixArena S1 / VBot Competition third prize, ranked 8 / 30.
+- Built a complete PPO workflow from environment registration and reward design to training, checkpointing, replay, and visualization.
+- Split the long competition route into segment environments, then transferred checkpoints across stages for curriculum learning.
+- Supported high-throughput training with 2048 parallel environments by default.
+- Kept both JAX and PyTorch training backends available through `--train-backend`.
+- Preserved trained checkpoints under `checkpoints/` for direct replay and continued training.
 
----
+## Task Overview
 
-## 📊 实验结果
+The full competition course has three scoring stages, with a maximum score of 25 points.
 
-| 指标 | 结果 |
-|---|---|
-| 比赛名称 | MotrixArena S1 / VBot Competition |
-| 比赛结果 | 三等奖 |
-| 排名 | 8 / 30 |
-| 训练算法 | PPO |
-| 训练框架 | SKRL |
-| 仿真平台 | MotrixSim |
-| 默认并行环境数 | 2048 |
-| 累计训练步数 | 约 61M steps |
-| 策略文件 | `checkpoints/best_agent.pickle`、`best_agent011.pickle` ~ `best_agent013.pickle` |
-| 复现入口 | `scripts/train.py`、`scripts/play.py`、`scripts/view.py` |
+| Stage | Route | Objective | Score |
+| --- | --- | --- | --- |
+| 1 | Section 011 -> 012 | Pass the rolling-ball area by either avoiding the balls or touching them without falling | 10-15 |
+| 2 | Section 012 -> 013 | Traverse random terrain and reach the Chinese-knot target | 5 |
+| 3 | Finish area | Execute the final celebration behavior | 5 |
 
-> 可继续补充：训练曲线截图、策略回放 GIF / 视频、比赛证书截图、完整赛道单次回放得分截图。
+Nominal navigation waypoints:
 
----
+```text
+(0, 7.5) -> (0, 24.3) -> (0, 32.3)
+```
 
-## 🧾 简历表述
+## Approach
 
-> 面向 MotrixArena S1 四足机器人复杂赛道导航任务，基于 MotrixSim 与 SKRL 搭建 PPO 强化学习训练链路，完成环境注册、奖励设计、2048 并行环境训练、checkpoint 保存与策略回放；针对长赛道直接训练收敛慢、复杂地形易摔倒等问题，设计分段课程学习方案，将任务拆分为 section001 / 011 / 012 / 013 / full 多阶段训练，并通过预训练策略迁移提升完整赛道稳定性；最终获得比赛三等奖，排名 8 / 30。
+| Challenge | Method | Outcome |
+| --- | --- | --- |
+| The full course is long and difficult to learn end-to-end | Decompose the route into `section001`, `section011`, `section012`, `section013`, and `full` environments | Reduced exploration difficulty and enabled staged policy development |
+| Rolling balls, uneven terrain, and finish-zone behavior make policies fragile | Add forward-progress, arrival, finish, fall-penalty, and stage-specific rewards | Improved stability across competition segments |
+| Sparse stage rewards can trap the policy in local behavior | Combine dense navigation rewards with checkpoint and stage rewards | Improved sample efficiency before full-course training |
+| Long RL training needs repeatable entry points | Provide unified `train.py`, `play.py`, and `view.py` scripts | Made experiments reproducible and replayable |
 
----
+## Quick Start
 
-## 🏅 竞赛成果
-
-- **奖项**：三等奖 🥉
-- **排名**：8 / 30 名
-- **技术路线**：基于 PPO 算法的端到端强化学习策略，在 MotrixSim 仿真环境中完成四足机器人（VBot）的导航任务训练
-
----
-
-## 🎯 比赛任务（满分 25 分）
-
-完整赛道分三阶段，机器人需依次导航通过每段赛道：
-
-| 阶段 | 路段 | 内容 | 分值 |
-|------|------|------|------|
-| 阶段一 | Section 011 → 012 | 穿越滚动球区域（二选一策略） | 10~15 分 |
-| | | 策略 A：避开滚球安全通过 | 10 分 |
-| | | 策略 B：触碰滚球且保持不摔倒 | 15 分 |
-| 阶段二 | Section 012 → 013 | 穿越随机地形到达终点"中国结" | 5 分 |
-| 阶段三 | 终点 | 终点庆祝动作 | 5 分 |
-
-导航航点顺序：`(0, 7.5)` → `(0, 24.3)` → `(0, 32.3)`
-
----
-
-## 🛠 技术栈
-
-| 技术 | 用途 |
-|------|------|
-| **Python 3.10** | 开发语言 |
-| **MotrixSim** | 机器人仿真平台（物理引擎） |
-| **SKRL** | 强化学习训练框架 |
-| **JAX / PyTorch** | 训练后端（支持切换） |
-| **uv** | Python 包管理器与 monorepo 工作区 |
-| **TensorBoard** | 训练监控与可视化 |
-
----
-
-## 🧪 可用环境列表
-
-项目注册了多种比赛环境，覆盖不同训练粒度和赛道分段：
-
-| 环境名 | 说明 | 适用场景 |
-|--------|------|----------|
-| `vbot_navigation_flat` | 平地导航 | 基础导航训练 |
-| `vbot_navigation_stairs` | 楼梯地形导航 | 上下坡/楼梯训练 |
-| `vbot_navigation_section01` | 赛道第 1 段 | 分段训练 |
-| `vbot_navigation_section02` | 赛道第 2 段 | 分段训练 |
-| `vbot_navigation_section03` | 赛道第 3 段 | 分段训练 |
-| `vbot_navigation_section011_012` | 第 1-2 段合并（无滚球/终点逻辑） | 地形穿越专项训练 |
-| `vbot_navigation_long_course` | 长赛道 | 长距离导航训练 |
-| `vbot_navigation_full` | 完整赛道（三段全含，满分 25 分） | 完整比赛模拟 |
-| `vbot-flat-terrain-walk` | 行走 locomotion | 基础行走训练 |
-
-已训练完成的策略文件位于 `checkpoints/` 目录，包括 `best_agent.pickle`、`best_agent011.pickle` ~ `best_agent013.pickle` 等按赛段保存的最优模型。
-
----
-
-## 🚀 环境配置与运行
-
-### 1) 克隆仓库
+### 1. Clone and Pull Assets
 
 ```bash
 git clone https://github.com/Logic-TARS/motrixarena-competition-S1.git
@@ -126,96 +68,116 @@ cd motrixarena-competition-S1
 git lfs pull
 ```
 
-### 2) 安装依赖
+### 2. Install Dependencies
 
-本项目使用 `uv` 进行依赖管理，采用 monorepo 工作区结构（`motrix_envs` + `motrix_rl` 两个子包）。
+The repository uses `uv` with a workspace containing `motrix_envs` and `motrix_rl`.
 
 ```bash
-# JAX 后端（默认推荐）
+# JAX backend
 uv sync --all-packages --extra skrl-jax
 
-# 或 PyTorch 后端
+# Or PyTorch backend
 uv sync --all-packages --extra skrl-torch
 ```
 
-### 3) 查看比赛环境（可视化）
+### 3. Train
 
 ```bash
-uv run scripts/view.py --env vbot_navigation_section001
+# Train a segment
+uv run scripts/train.py --env vbot_navigation_section001 --num-envs 2048
+
+# Continue from a trained policy
+uv run scripts/train.py --env vbot_navigation_section011 --policy checkpoints/best_agent001.pickle
+
+# Train the full course
+uv run scripts/train.py --env vbot_navigation_full --num-envs 2048
 ```
 
-### 4) 训练模型
+### 4. Replay
 
 ```bash
-# 训练单个赛段
-uv run scripts/train.py --env vbot_navigation_section001
+# Replay a specific checkpoint
+uv run scripts/play.py --env vbot_navigation_section011 --policy checkpoints/best_agent011.pickle
 
-# 训练完整赛道
-uv run scripts/train.py --env vbot_navigation_full
-
-# 查看训练曲线
-uv run tensorboard --logdir runs/
+# Use PyTorch or JAX explicitly for training
+uv run scripts/train.py --env vbot_navigation_full --train-backend jax
+uv run scripts/train.py --env vbot_navigation_full --train-backend torch
 ```
 
-训练脚本支持多种参数：
+Useful script arguments:
 
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `--num-envs` | 并行环境数 | 2048 |
-| `--train-backend` | 训练后端 (`jax`/`torch`) | 自动检测 |
-| `--policy` | 加载预训练策略（用于课程学习） | None |
-| `--checkpoint-interval` | 保存间隔（timesteps） | 1000 |
-| `--seed` / `--rand-seed` | 随机种子 | 固定 / 随机 |
-| `--env-cfg` | 环境配置覆盖（如 `--env-cfg curriculum_from_001=True`） | — |
+| Argument | Purpose | Default |
+| --- | --- | --- |
+| `--num-envs` | Number of parallel environments | `2048` |
+| `--train-backend` | RL backend, `jax` or `torch` | `jax` |
+| `--policy` | Pretrained checkpoint for transfer learning or replay | `None` |
+| `--checkpoint-interval` | Checkpoint save interval in timesteps | Config default |
+| `--seed` / `--rand-seed` | Fixed or randomized seed | `None` / `False` |
+| `--env-cfg` | Environment config overrides, for example `curriculum_from_001=True` | None |
 
-### 5) 推理/回放
+## Environments
 
-```bash
-# 自动加载最新训练好的策略
-uv run scripts/play.py --env vbot_navigation_section001
+Core VBot competition environments used by the training and replay commands:
 
-# 指定策略文件
-uv run scripts/play.py --env vbot_navigation_section001 --policy checkpoints/best_agent.pickle
-```
+| Environment | Purpose |
+| --- | --- |
+| `vbot_navigation_flat` | Basic flat-ground navigation |
+| `vbot_navigation_section001` | Initial section training |
+| `vbot_navigation_section011` | Competition section 011 |
+| `vbot_navigation_section012` | Competition section 012 |
+| `vbot_navigation_section013` | Competition section 013 |
+| `vbot_navigation_section011_012` | Combined section 011 -> 012 transfer task |
+| `vbot_navigation_long_course` | Long-route navigation |
+| `vbot_navigation_full` | Full competition route |
 
----
+These names are implemented and registered under `motrix_envs/src/motrix_envs/navigation/vbot/`.
 
-## 📁 仓库结构
+## Results and Checkpoints
 
-```
-├── motrix_envs/              # 仿真环境包
+| Item | Value |
+| --- | --- |
+| Competition | MotrixArena S1 / VBot Competition |
+| Result | Third prize |
+| Rank | 8 / 30 |
+| Algorithm | PPO |
+| Training framework | SKRL |
+| Simulation platform | MotrixSim |
+| Default parallel environments | 2048 |
+
+Saved policies:
+
+| Checkpoint | Intended use |
+| --- | --- |
+| `checkpoints/best_agent001.pickle` | Initial section policy |
+| `checkpoints/best_agent011.pickle` | Section 011 policy |
+| `checkpoints/best_agent012.pickle` | Section 012 policy |
+| `checkpoints/best_agent013.pickle` | Section 013 policy |
+| `checkpoints/best_agent.pickle` | Full-course / final policy |
+
+## Repository Structure
+
+```text
+.
+├── motrix_envs/              # Simulation environments
 │   └── src/motrix_envs/
-│       ├── navigation/vbot/  # VBot 导航环境（核心比赛代码）
-│       ├── locomotion/vbot/  # VBot 行走环境
-│       └── basic/            # 基础示例环境（cartpole, hopper 等）
-├── motrix_rl/                # RL 训练框架包
+│       ├── navigation/vbot/  # VBot competition navigation environments
+│       ├── locomotion/vbot/  # VBot locomotion environments
+│       └── basic/            # Basic example environments
+├── motrix_rl/                # RL training package
 │   └── src/motrix_rl/skrl/
-│       ├── jax/train/ppo.py  # PPO-JAX 训练器
-│       └── torch/train/ppo.py# PPO-PyTorch 训练器
-├── scripts/                  # 训练/推理/可视化脚本
-│   ├── train.py
-│   ├── play.py
-│   └── view.py
-├── checkpoints/              # 训练好的策略模型
-├── docs/                     # 比赛文档
-├── logs/                     # 训练日志
-├── archives/                 # 历史归档
-├── pyproject.toml            # 项目配置（uv workspace）
+│       ├── jax/train/ppo.py
+│       └── torch/train/ppo.py
+├── scripts/                  # Training, replay, and visualization entry points
+├── checkpoints/              # Saved policy checkpoints
+├── docs/                     # Competition and project documentation
+├── logs/                     # Training logs
+├── archives/                 # Historical experiment archives
+├── pyproject.toml            # uv workspace configuration
 └── uv.lock
 ```
 
----
+## Notes
 
-## 📝 亮点说明
+This repository is organized as a portfolio and reproducibility record for the MotrixArena S1 competition. Upstream simulation assets, robot models, and related framework components remain the property of their respective maintainers.
 
-- **奖励函数塑形**：稠密奖励引导 + 阶段性任务奖励（checkpoint 检查点奖励、终点庆祝奖励），加速收敛。
-- **多阶段课程学习**：支持分段训练 → 合并训练 → 完整赛道的递进式训练流程，并可通过 `--policy` 加载预训练策略继续训练。
-- **双后端支持**：JAX 和 PyTorch 两种训练后端可自由切换。
-- **PPO 算法优化**：针对导航任务调整 PPO 超参数，优化策略稳定性与收敛效率。
-- **工程化封装**：通过 `uv workspace` 管理 `motrix_envs` 与 `motrix_rl`，训练、回放、可视化入口统一。
-
----
-
-## 👤 作者信息
-
-- **GitHub**: [Logic-TARS](https://github.com/Logic-TARS)
+See [LICENSE](LICENSE) and [NOTICE](NOTICE) for license and attribution details.
